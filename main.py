@@ -37,7 +37,7 @@ def load_data():
         with open(DATA_FILE, 'r') as f: return json.load(f)
     return {
         "online_msg": "🛡️ **Order is restored. Leader {user_name} is watching.**",
-        "offline_msg": "Leader **{user_name}** is offline — <@&1018171797126004827> stay active, **ARIES Citizen** take charge, track the leaderboard, and hold our clan position."
+        "offline_msg": "Leader **{user_name}** is offline — <@&1018171797126004827> take charge, **ARIES Citizen** stay active, track the leaderboard, and hold our clan position."
     }
 
 def save_data(data):
@@ -58,7 +58,7 @@ class SetLeaderView(discord.ui.View):
     )
     async def select_callback(self, interaction: discord.Interaction, select: discord.ui.Select):
         self.bot.waiting_for_input[interaction.user.id] = select.values[0]
-        await interaction.response.send_message(f"✅ Mode selected: **{select.values[0]}**. Please send the new message now (you can use {{user_name}} as a placeholder).", ephemeral=True)
+        await interaction.response.send_message(f"✅ Mode selected: **{select.values[0]}**. Please send the new message now (use {{user_name}} for leader's name).", ephemeral=True)
 
 # --- BOT CLASS ---
 class AriesBot(commands.Bot):
@@ -78,12 +78,14 @@ bot = AriesBot()
 @bot.command()
 @commands.has_permissions(administrator=True)
 async def setleader(ctx):
+    if ctx.channel.id != TARGET_CHANNEL_ID: return 
     view = SetLeaderView(bot)
     await ctx.send("⚙️ Select the message type you want to configure:", view=view)
 
 @bot.command()
 @commands.has_permissions(administrator=True)
 async def status(ctx):
+    if ctx.channel.id != TARGET_CHANNEL_ID: return 
     latency = round(bot.latency * 1000)
     memory = psutil.Process(os.getpid()).memory_info().rss / 1024**2
     embed = discord.Embed(title="⚙️ Aries Self-Diagnostic", color=0x3498db)
@@ -97,15 +99,15 @@ async def status(ctx):
 async def on_message(message):
     if message.author == bot.user: return
     
-    # 1. Custom Message Input Logic
-    if message.author.id in bot.waiting_for_input:
+    # 1. Custom Message Input Logic (Lock to TARGET_CHANNEL_ID)
+    if message.channel.id == TARGET_CHANNEL_ID and message.author.id in bot.waiting_for_input:
         mode = bot.waiting_for_input.pop(message.author.id)
         bot.leader_msgs[mode] = message.content
         save_data(bot.leader_msgs)
-        await message.channel.send(f"✅ Success! Updated `{mode}`.")
+        await message.reply(f"✅ Success! Updated `{mode}` to: `{message.content}`")
         return
 
-    # 2. Existing Attendance Logic
+    # 2. Existing Attendance Logic (Lock to TARGET_CHANNEL_ID)
     if message.guild and message.guild.id == TARGET_SERVER_ID and message.channel.id == TARGET_CHANNEL_ID:
         content = message.content.lower().strip()
         user = message.author
