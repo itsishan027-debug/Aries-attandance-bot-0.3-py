@@ -50,7 +50,7 @@ class SetLeaderView(discord.ui.View):
         self.bot = bot
 
     @discord.ui.select(
-        placeholder="Select Mode (Online ya Offline)",
+        placeholder="Select Mode (Online or Offline)",
         options=[
             discord.SelectOption(label="Online Message", value="online_msg"),
             discord.SelectOption(label="Offline Message", value="offline_msg")
@@ -58,7 +58,7 @@ class SetLeaderView(discord.ui.View):
     )
     async def select_callback(self, interaction: discord.Interaction, select: discord.ui.Select):
         self.bot.waiting_for_input[interaction.user.id] = select.values[0]
-        await interaction.response.send_message(f"✅ Mode select hua: **{select.values[0]}**. Ab apna naya message bhejein (placeholders use kar sakte hain: {{user_name}}).", ephemeral=True)
+        await interaction.response.send_message(f"✅ Mode selected: **{select.values[0]}**. Please send the new message now (you can use {{user_name}} as a placeholder).", ephemeral=True)
 
 # --- BOT CLASS ---
 class AriesBot(commands.Bot):
@@ -79,7 +79,7 @@ bot = AriesBot()
 @commands.has_permissions(administrator=True)
 async def setleader(ctx):
     view = SetLeaderView(bot)
-    await ctx.send("⚙️ Leader ke messages configure karne ke liye select karein:", view=view)
+    await ctx.send("⚙️ Select the message type you want to configure:", view=view)
 
 @bot.command()
 @commands.has_permissions(administrator=True)
@@ -139,3 +139,4 @@ async def on_ready():
 if __name__ == "__main__":
     keep_alive()
     if TOKEN: bot.run(TOKEN)
+        
